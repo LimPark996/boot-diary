@@ -1,6 +1,7 @@
 package org.example.bootdiary.controller;
 
 import lombok.extern.java.Log;
+import org.example.bootdiary.exception.BadFileException;
 import org.example.bootdiary.model.entity.Article;
 import org.example.bootdiary.model.form.ArticleForm;
 import org.example.bootdiary.service.ArticleService;
@@ -41,18 +42,18 @@ public class ArticleController {
     }
 
     @PostMapping("/new")
-    public String newArticle(ArticleForm form) {
-        log.info(form.toString());
-        MultipartFile file = form.file();
-        if (!file.getName().isEmpty() && !file.isEmpty()) {
-            // 파일의 존재로 감지하는 게 아니라 용량의 존재로 감지하는 거였다~
-//            log.info("파일 있음");
-            String fileType = file.getContentType();
-            log.info(fileType);
-            boolean isImage = fileType.startsWith("image/");
-            log.info(isImage ? "이미지 O" : "이미지 X");
-        } else {
-            log.info("파일 없음");
+    public String newArticle(ArticleForm form, Model model) {
+        try {
+            String filename = fileService.upload(form.file()); // 여기서 아예 에러가 터지게 하자!
+            // 파일이 없다 -> 빈게 나옴. / 파일이 비었다 혹은 잘못된 파일이다 -> 예외처리 -> BadFileException
+
+        } catch (BadFileException e) {
+            model.addAttribute("message", "잘못된 파일");
+            // 폼의 제목이랑 내용은 그대로 가져가고... 파일만 비워서 다시 폼으로 보냄
+            model.addAttribute("form", new ArticleForm(form.title(), form.content(), null));
+            return "redirect:/article/new";
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
         return "redirect:/article";
     }

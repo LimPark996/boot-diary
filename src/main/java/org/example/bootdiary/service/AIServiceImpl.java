@@ -1,6 +1,7 @@
 package org.example.bootdiary.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.java.Log;
 import org.example.bootdiary.model.dto.TogetherAPIDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -12,10 +13,11 @@ import java.net.http.HttpResponse;
 import java.util.List;
 
 @Service
+@Log
 public class AIServiceImpl implements AIService {
-    @Value("together.api-key")
+    @Value("${together.api-key}")
     private String apiKey;
-    @Value("together.model")
+    @Value("${together.model}")
     private String model;
 
     @Override
@@ -31,6 +33,7 @@ public class AIServiceImpl implements AIService {
                 .POST(HttpRequest.BodyPublishers.ofString(body))
                 .build();
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
         if (response.statusCode() == 200) {
             return response.body(); // 후처리
         }

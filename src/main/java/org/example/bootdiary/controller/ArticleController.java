@@ -39,17 +39,19 @@ public class ArticleController {
 
     @PostMapping("/new")
     public String newArticle(ArticleForm form, RedirectAttributes redirectAttributes, Model model) {
-        Article article = new Article();
-        article.setTitle(form.title());
-        article.setContent(form.content());
+        // 엔터티가 미리 만들어지는 불상사 방지
+//        Article article = new Article();
+//        article.setTitle(form.title());
+//        article.setContent(form.content());
         try {
+            String filename = "";
             if (!form.file().isEmpty()) {
-                String filename = fileService.upload(form.file());
-                article.setFilename(filename);
+                filename = fileService.upload(form.file());
+//                article.setFilename(filename);
             }
-            articleService.save(article);
+            articleService.save(form, filename);
         } catch (Exception e) {
-            model.addAttribute("error", e.getMessage());
+            model.addAttribute("message", e.getMessage());
             model.addAttribute("form", form);
             return "article/form";
         }

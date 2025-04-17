@@ -44,6 +44,8 @@
             <a th:href="@{/article/new}">글 작성</a>
         </nav>
     </header>
+    <section th:text="${list}">
+    </section>
     <section style="margin: auto; padding: 1rem; max-width: 768px;">
         <article th:each="el : ${list}">
             <section th:if="${el.filename}">

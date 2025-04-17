@@ -1,5 +1,7 @@
 package org.example.bootdiary.service;
 
+import lombok.extern.java.Log;
+import org.apache.coyote.BadRequestException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -13,6 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 @Service
+@Log
 public class FileServiceImpl implements FileService {
     @Value("${supabase.url}")
     private String url;
@@ -24,7 +27,13 @@ public class FileServiceImpl implements FileService {
     @Override
     public String upload(MultipartFile file) throws Exception {
         String uuid = UUID.randomUUID().toString();
-        String extension = file.getContentType().split("/")[1];
+        String contentType = file.getContentType();
+        log.info("contentType : " + contentType);
+        boolean isImage = contentType.contains("image");
+        if (!isImage) {
+            throw new BadRequestException("첨부한 파일이 이미지가 아닙니다!");
+        }
+        String extension = contentType.split("/")[1];
         String boundary = "Boundary-%s".formatted(uuid);
         String filename = "%s.%s".formatted(uuid, extension);
         HttpRequest request = HttpRequest.newBuilder()

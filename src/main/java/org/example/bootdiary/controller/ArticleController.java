@@ -48,10 +48,12 @@ public class ArticleController {
             // 파일이 없다 -> 빈게 나옴. / 파일이 비었다 혹은 잘못된 파일이다 -> 예외처리 -> BadFileException
 
         } catch (BadFileException e) {
-            model.addAttribute("message", "잘못된 파일");
+//            model.addAttribute("message", "잘못된 파일");
+            model.addAttribute("message", e.getMessage());
             // 폼의 제목이랑 내용은 그대로 가져가고... 파일만 비워서 다시 폼으로 보냄
             model.addAttribute("form", new ArticleForm(form.title(), form.content(), null));
-            return "redirect:/article/new";
+//            return "redirect:/article/new";
+            return "article/form";
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

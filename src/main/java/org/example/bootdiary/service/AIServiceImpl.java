@@ -3,6 +3,7 @@ package org.example.bootdiary.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.java.Log;
 import org.example.bootdiary.model.dto.TogetherAPIDTO;
+import org.example.bootdiary.model.dto.TogetherResponseDTO;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -35,7 +36,8 @@ public class AIServiceImpl implements AIService {
         HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
         if (response.statusCode() == 200) {
-            return response.body(); // 후처리
+//            return response.body(); // 후처리
+            return mapper.readValue(response.body(), TogetherResponseDTO.class).choices().get(0).message().content();
         }
         throw new Exception("잘못된 결과");
     }

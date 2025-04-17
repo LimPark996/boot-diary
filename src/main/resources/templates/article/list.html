@@ -48,7 +48,7 @@
 <!--    </section>-->
     <section style="margin: auto; padding: 1rem; max-width: 768px;">
         <article th:each="el : ${list}">
-            <section th:if="${el.filename}">
+            <section th:unless="${el.filename.equals('')}">
                 <!-- <img style="width: 4rem;" th:src="${el.filename}" alt="사진">-->
                 <img style="width: 4rem;" th:src="@{/file/{filename}(filename=${el.filename})}" alt="사진">
             </section>

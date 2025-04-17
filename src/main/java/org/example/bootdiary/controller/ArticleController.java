@@ -25,6 +25,7 @@ public class ArticleController {
 
     @GetMapping("/new")
     public String newArticle(Model model) {
+        model.addAttribute("title", "글 작성 🍎️");
         model.addAttribute("form", ArticleForm.empty());
         model.addAttribute("edit", false);
         return "article/form";

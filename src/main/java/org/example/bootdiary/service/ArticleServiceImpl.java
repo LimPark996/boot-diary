@@ -18,7 +18,8 @@ public class ArticleServiceImpl implements ArticleService {
 
     @Override
     public List<Article> findAll() {
-        return articleRepository.findAll();
+//        return articleRepository.findAll();
+        return articleRepository.findAllByOrderByCreatedAt(); // 오래된순
     }
 
     @Override
@@ -30,5 +31,15 @@ public class ArticleServiceImpl implements ArticleService {
            throw new BadDataException("내용이 비었습니다");
         }
         articleRepository.save(article);
+    }
+
+    @Override
+    public Article findById(String uuid) {
+        return articleRepository.findById(uuid).orElseThrow();
+    }
+
+    @Override
+    public void delete(String uuid) {
+        articleRepository.deleteById(uuid);
     }
 }

@@ -11,4 +11,8 @@ public interface ArticleService {
     List<Article> findAll();
 
     void save(Article article) throws BadDataException;
+
+    Article findById(String uuid);
+
+    void delete(String uuid);
 }

@@ -10,9 +10,9 @@ import org.example.bootdiary.service.FileService;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 @Controller
@@ -66,6 +66,51 @@ public class ArticleController {
             log.severe(e.getMessage());
             throw new RuntimeException(e); // 500(?)
         }
+        return "redirect:/article";
+    }
+
+    @GetMapping("/edit/{uuid}")
+    public String editArticle(Model model, @PathVariable String uuid) {
+        model.addAttribute("title", "글 수정 🍎️");
+        Article prevArticle = articleService.findById(uuid);
+        model.addAttribute("form", new ArticleForm(prevArticle.getTitle(), prevArticle.getContent(), null));
+        model.addAttribute("edit", true);
+        return "article/form";
+    }
+
+    @PostMapping("/edit/{uuid}")
+    public String editArticle(ArticleForm form, Model model, @PathVariable String uuid) {
+        try {
+            String filename = fileService.upload(form.file()); // 여기서 아예 에러가 터지게 하자!
+            // 파일이 없다 -> 빈게 나옴. / 파일이 비었다 혹은 잘못된 파일이다 -> 예외처리 -> BadFileException
+            Article article = articleService.findById(uuid);
+            article.setTitle(form.title());
+            article.setContent(form.content());
+            if (!filename.isEmpty()) { // 수정이니까... 기존 파일을 보호하는 셈
+                article.setFilename(filename);
+            }
+            articleService.save(article);
+        } catch (BadFileException e) {
+//            model.addAttribute("message", "잘못된 파일");
+            model.addAttribute("message", e.getMessage());
+            // 폼의 제목이랑 내용은 그대로 가져가고... 파일만 비워서 다시 폼으로 보냄
+            model.addAttribute("form", new ArticleForm(form.title(), form.content(), null));
+//            return "redirect:/article/new";
+            return "article/form";
+        } catch (BadDataException e) {
+            model.addAttribute("message", e.getMessage());
+            model.addAttribute("form", form); // 그대로 보내도 되겠네...
+        } catch (Exception e) {
+            log.severe(e.getMessage());
+            throw new RuntimeException(e); // 500(?)
+        }
+        return "redirect:/article";
+    }
+
+    @PostMapping("/delete/{uuid}")
+    public String deleteArticle(@PathVariable String uuid, RedirectAttributes redirectAttributes) {
+        articleService.delete(uuid);
+        redirectAttributes.addFlashAttribute("message", "삭제 성공! %s".formatted(uuid));
         return "redirect:/article";
     }
 }

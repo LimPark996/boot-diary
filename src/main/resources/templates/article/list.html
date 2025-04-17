@@ -49,12 +49,16 @@
     <section style="margin: auto; padding: 1rem; max-width: 768px;">
         <article th:each="el : ${list}">
             <section th:if="${el.filename}">
-<!--                <img style="width: 4rem;" th:src="${el.filename}" alt="사진">-->
+                <!-- <img style="width: 4rem;" th:src="${el.filename}" alt="사진">-->
                 <img style="width: 4rem;" th:src="@{/file/{filename}(filename=${el.filename})}" alt="사진">
             </section>
             <section>
                 <h3 th:text="${el.title}"></h3>
                 <p th:text="${el.content}"></p>
+                <a th:href="@{/article/edit/{uuid}(uuid=${el.uuid})}">수정</a>
+                <form th:action="@{/article/delete/{uuid}(uuid=${el.uuid})}" method="post">
+                    <button>삭제</button>
+                </form>
             </section>
         </article>
     </section>

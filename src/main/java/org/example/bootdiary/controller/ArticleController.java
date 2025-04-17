@@ -38,24 +38,7 @@ public class ArticleController {
     }
 
     @PostMapping("/new")
-    public String newArticle(ArticleForm form, RedirectAttributes redirectAttributes, Model model) {
-        // 엔터티가 미리 만들어지는 불상사 방지
-//        Article article = new Article();
-//        article.setTitle(form.title());
-//        article.setContent(form.content());
-        try {
-            String filename = "";
-            if (!form.file().isEmpty()) {
-                filename = fileService.upload(form.file());
-//                article.setFilename(filename);
-            }
-            articleService.save(form, filename);
-        } catch (Exception e) {
-            model.addAttribute("message", e.getMessage());
-            model.addAttribute("form", form);
-            return "article/form";
-        }
-        redirectAttributes.addFlashAttribute("message", "추가 성공!");
+    public String newArticle(ArticleForm form) {
         return "redirect:/article";
     }
 }

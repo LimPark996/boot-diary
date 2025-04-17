@@ -1,6 +1,7 @@
 package org.example.bootdiary.controller;
 
 import lombok.extern.java.Log;
+import org.example.bootdiary.exception.BadDataException;
 import org.example.bootdiary.exception.BadFileException;
 import org.example.bootdiary.model.entity.Article;
 import org.example.bootdiary.model.form.ArticleForm;
@@ -46,7 +47,11 @@ public class ArticleController {
         try {
             String filename = fileService.upload(form.file()); // 여기서 아예 에러가 터지게 하자!
             // 파일이 없다 -> 빈게 나옴. / 파일이 비었다 혹은 잘못된 파일이다 -> 예외처리 -> BadFileException
-
+            Article article = new Article();
+            article.setTitle(form.title());
+            article.setContent(form.content());
+            article.setFilename(filename);
+            articleService.save(article);
         } catch (BadFileException e) {
 //            model.addAttribute("message", "잘못된 파일");
             model.addAttribute("message", e.getMessage());
@@ -54,8 +59,12 @@ public class ArticleController {
             model.addAttribute("form", new ArticleForm(form.title(), form.content(), null));
 //            return "redirect:/article/new";
             return "article/form";
+        } catch (BadDataException e) {
+            model.addAttribute("message", e.getMessage());
+            model.addAttribute("form", form); // 그대로 보내도 되겠네...
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            log.severe(e.getMessage());
+            throw new RuntimeException(e); // 500(?)
         }
         return "redirect:/article";
     }

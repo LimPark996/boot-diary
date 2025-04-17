@@ -2,6 +2,7 @@ package org.example.bootdiary.service;
 
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
+import org.example.bootdiary.exception.BadDataException;
 import org.example.bootdiary.model.entity.Article;
 import org.example.bootdiary.model.repository.ArticleRepository;
 import org.springframework.stereotype.Service;
@@ -18,5 +19,16 @@ public class ArticleServiceImpl implements ArticleService {
     @Override
     public List<Article> findAll() {
         return articleRepository.findAll();
+    }
+
+    @Override
+    public void save(Article article) throws BadDataException {
+        if (article.getTitle().isEmpty()) {
+            throw new BadDataException("제목이 비었습니다");
+        }
+        if (article.getContent().isEmpty()) {
+           throw new BadDataException("내용이 비었습니다");
+        }
+        articleRepository.save(article);
     }
 }

@@ -1,96 +1,93 @@
+## 전체적인 흐름
+
 ```mermaid
-flowchart TD
-    subgraph 사용자
-        A1[🧑 사용자]
+sequenceDiagram
+    participant 사용자
+    participant HTML
+    participant Controller
+    participant FileService
+    participant ArticleService
+    participant Repository
+    participant Supabase
+    participant DB
+
+    %% 글 작성
+    사용자->>HTML: 글 작성 페이지 이동 (/article/new)
+    사용자->>HTML: 글 입력 + 이미지 첨부
+    HTML->>Controller: POST /article/new
+    Controller->>FileService: upload(file)
+    alt 이미지 비었거나 손상됨
+        FileService-->>Controller: throw BadFileException
+        Controller-->>HTML: form.html로 메시지와 함께 이동
+    else 이미지 정상
+        FileService->>Supabase: 이미지 업로드
+        Supabase-->>FileService: 파일명 응답
+        Controller->>ArticleService: save(title, content, filename)
+        alt 제목/내용 없음
+            ArticleService-->>Controller: throw BadDataException
+            Controller-->>HTML: form.html로 메시지와 함께 이동
+        else 정상 저장
+            ArticleService->>Repository: save(Entity)
+            Repository->>DB: INSERT 쿼리
+            DB-->>Repository: 저장 완료
+            Repository-->>ArticleService: Entity 반환
+            ArticleService-->>Controller: 성공 응답
+            Controller-->>사용자: 글 목록 페이지로 이동
+        end
     end
 
-    subgraph 클라이언트 화면 (Thymeleaf HTML)
-        A2[📄 index.html<br>/article/list.html]
-        A3[📝 /article/form.html]
-    end
+    %% 글 목록 조회
+    사용자->>Controller: GET /article
+    Controller->>ArticleService: findAll()
+    ArticleService->>Repository: SELECT * FROM articles
+    Repository->>DB: SQL 실행
+    DB-->>Repository: 결과 반환
+    Repository-->>ArticleService: List<Article>
+    ArticleService-->>Controller: 전달
+    Controller-->>HTML: 목록 렌더링
 
-    subgraph Controller
-        B1[🎯 MainController<br>@GetMapping("/")<br>@GetMapping("/file/{filename}")]
-        B2[🎯 ArticleController<br>@GetMapping("/article")]
-        B3[🎯 ArticleController<br>@GetMapping("/article/new")]
-        B4[🎯 ArticleController<br>@PostMapping("/article/new")]
-        B5[🎯 ArticleController<br>@GetMapping("/edit/{uuid}")]
-        B6[🎯 ArticleController<br>@PostMapping("/edit/{uuid}")]
-        B7[🎯 ArticleController<br>@PostMapping("/delete/{uuid}")]
-    end
+    %% 글 수정
+    사용자->>Controller: GET /article/edit/uuid
+    Controller->>ArticleService: findById(uuid)
+    ArticleService->>Repository: findById(uuid)
+    Repository->>DB: SELECT
+    DB-->>Repository: Entity 반환
+    Repository-->>ArticleService: Entity 반환
+    ArticleService-->>Controller: 기존 내용 렌더링
 
-    subgraph Service
-        C1[🛠️ FileServiceImpl<br>upload(), download()]
-        C2[📦 ArticleServiceImpl<br>save(), findAll(), findById(), delete()]
-    end
-
-    subgraph 저장소
-        D1[☁️ Supabase<br>파일 저장소]
-        D2[🗂️ ArticleRepository]
-        D3[(🧠 DB)]
-    end
-
-    subgraph 예외 처리
-        E1[❌ BadFileException<br>→ form 재렌더링]
-        E2[❌ BadDataException<br>→ form 재렌더링]
-        E3[❌ Supabase 다운로드 실패<br>→ 500 응답]
-    end
-
-    %% 사용자 → HTML
-    A1 -->|GET /article| A2
-    A1 -->|GET /article/new| A3
-    A1 -->|POST /article/new| B4
-    A1 -->|POST /article/edit/{uuid}| B6
-    A1 -->|POST /article/delete/{uuid}| B7
-    A1 -->|GET /file/{filename}| B1
-
-    %% HTML → Controller
-    A2 --> B2
-    A3 --> B3
-
-    %% Controller → Service → 저장
-    B4 -->|파일 업로드| C1 -->|요청| D1
-    C1 --업로드 성공--> B4
-    C1 --BadFileException--> E1 --> A3
-    B4 -->|파일명 설정 후 저장| C2 -->|유효성 검사| D2 --> D3
-    C2 --BadDataException--> E2 --> A3
-
-    %% 수정 흐름
-    B6 -->|파일 업로드| C1 -->|요청| D1
-    C1 --업로드 성공--> B6
-    C1 --BadFileException--> E1 --> A3
-    B6 -->|파일명 설정 후 수정 저장| C2 -->|유효성 검사| D2 --> D3
-    C2 --BadDataException--> E2 --> A3
-
-    %% 글 목록
-    B2 --> C2 --> D2 --> D3
-
-    %% 글 수정 진입
-    B5 --> C2 --> D2 --> D3
+    사용자->>HTML: 수정 입력 + 새 이미지
+    HTML->>Controller: POST /article/edit/uuid
+    Controller->>FileService: upload(file)
+    FileService->>Supabase: 이미지 재업로드
+    Supabase-->>FileService: 응답
+    Controller->>ArticleService: 수정 저장 요청
+    ArticleService->>Repository: save(Entity)
+    Repository->>DB: UPDATE
+    DB-->>Repository: 완료
+    Repository-->>ArticleService: 완료
+    Controller-->>사용자: 글 목록 리디렉션
 
     %% 글 삭제
-    B7 --> C2 --> D2 --> D3
+    사용자->>Controller: POST /article/delete/uuid
+    Controller->>ArticleService: delete(uuid)
+    ArticleService->>Repository: deleteById(uuid)
+    Repository->>DB: DELETE
+    DB-->>Repository: 완료
+    Repository-->>ArticleService: 완료
+    Controller-->>사용자: 목록 페이지 이동
 
-    %% 파일 다운로드
-    B1 --> C1 --> D1
-    C1 --다운로드 실패--> E3
+    %% 이미지 다운로드
+    사용자->>Controller: GET /file/filename
+    Controller->>FileService: download(filename)
+    FileService->>Supabase: 이미지 요청
+    alt 실패
+        Supabase-->>FileService: 실패
+        FileService-->>Controller: throw IOException
+        Controller-->>사용자: 500 응답
+    else 성공
+        Supabase-->>FileService: 이미지 바이너리
+        FileService-->>Controller: 파일 반환
+        Controller-->>사용자: 이미지 전송
+    end
 
-    style A1 fill:#fdf2e9,stroke:#e67e22
-    style A2 fill:#fef9e7,stroke:#f39c12
-    style A3 fill:#fef9e7,stroke:#f39c12
-    style B1 fill:#e8f8f5,stroke:#1abc9c
-    style B2 fill:#e8f8f5,stroke:#1abc9c
-    style B3 fill:#e8f8f5,stroke:#1abc9c
-    style B4 fill:#e8f8f5,stroke:#1abc9c
-    style B5 fill:#e8f8f5,stroke:#1abc9c
-    style B6 fill:#e8f8f5,stroke:#1abc9c
-    style B7 fill:#e8f8f5,stroke:#1abc9c
-    style C1 fill:#fce4ec,stroke:#ec407a
-    style C2 fill:#e8f5e9,stroke:#2ecc71
-    style D1 fill:#f9fbe7,stroke:#9ccc65
-    style D2 fill:#d6eaf8,stroke:#3498db
-    style D3 fill:#ede7f6,stroke:#8e44ad
-    style E1 fill:#fdecea,stroke:#e74c3c
-    style E2 fill:#fdecea,stroke:#e74c3c
-    style E3 fill:#fdecea,stroke:#e74c3c
 ```

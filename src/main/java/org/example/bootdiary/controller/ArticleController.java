@@ -1,10 +1,12 @@
 package org.example.bootdiary.controller;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.java.Log;
 import org.example.bootdiary.exception.BadDataException;
 import org.example.bootdiary.exception.BadFileException;
 import org.example.bootdiary.model.entity.Article;
 import org.example.bootdiary.model.form.ArticleForm;
+import org.example.bootdiary.service.AIService;
 import org.example.bootdiary.service.ArticleService;
 import org.example.bootdiary.service.FileService;
 import org.springframework.stereotype.Controller;
@@ -18,14 +20,11 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 @RequestMapping("/article")
 @Log // Logback
+@RequiredArgsConstructor
 public class ArticleController {
     private final ArticleService articleService;
     private final FileService fileService;
-
-    public ArticleController(ArticleService articleService, FileService fileService) {
-        this.articleService = articleService;
-        this.fileService = fileService;
-    }
+    private final AIService aiService;
 
     @GetMapping
     public String list(Model model) {
@@ -43,7 +42,7 @@ public class ArticleController {
     }
 
     @PostMapping("/new")
-    public String newArticle(ArticleForm form, Model model) {
+    public String newArticle(ArticleForm form, Model model, RedirectAttributes redirectAttributes) {
         try {
             String filename = fileService.upload(form.file()); // 여기서 아예 에러가 터지게 하자!
             // 파일이 없다 -> 빈게 나옴. / 파일이 비었다 혹은 잘못된 파일이다 -> 예외처리 -> BadFileException
@@ -52,6 +51,9 @@ public class ArticleController {
             article.setContent(form.content());
             article.setFilename(filename);
             articleService.save(article);
+            String result = aiService.answer(form.title() + "에 대해서 무슨 감정인지 한글로 분석해줘. 마크다운 쓰지 않은 평문으로. 간결하게.");
+//            log.info(result);
+            redirectAttributes.addFlashAttribute("message", result);
         } catch (BadFileException e) {
 //            model.addAttribute("message", "잘못된 파일");
             model.addAttribute("message", e.getMessage());
